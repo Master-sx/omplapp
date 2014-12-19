@@ -16,6 +16,27 @@
 
 using namespace ompl;
 
+class timeStateValidityChecker : public base::StateValidityChecker
+{
+public:
+        timeStateValidityChecker(const base::SpaceInformationPtr &si) :
+            base::StateValidityChecker(si)
+                {
+
+                }
+
+        virtual bool isValid(const base::State *state) const
+        {
+            return true;
+        }
+};
+
+class timeMotionValidator : public base::MotionValidator
+{
+public:
+
+};
+
 int main()
 {
     // plan for two bodies in SE2
@@ -53,8 +74,21 @@ int main()
     // set the start & goal states
     setup.setStartAndGoalStates(start, goal);
 
-    // setting collision checking resolution to 1% of the space extent
-    // setup.getSpaceInformation()->setStateValidityCheckingResolution(0.01);
+    base::SpaceInformationPtr si(setup.getSpaceInformation());
+
+    // set bounds    
+    base::RealVectorBounds bounds(2);
+    bounds.setLow(-30.0);
+    bounds.setHigh(30.0);
+    //si->as<base::SE2StateSpace>()->setBounds(bounds);
+
+    // set state validity checker    
+    si->setStateValidityChecker(base::StateValidityCheckerPtr(new timeStateValidityChecker(si)));
+
+    // set motion validator
+    // si->setMotionValidator(base::MotionValidatorPtr(new timeMotionValidator(si)));
+    
+    si->setup();
 
     // use RRTConnect for planning
     setup.setPlanner (base::PlannerPtr(new geometric::RRTConnect(setup.getSpaceInformation())));
@@ -65,6 +99,7 @@ int main()
     if (setup.solve(60))
     {
         setup.simplifySolution();
+        // setup.getSolutionPath().interpolate(); // plot the path
         setup.getSolutionPath().printAsMatrix(std::cout);
     }
 
