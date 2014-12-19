@@ -13,7 +13,7 @@
 #ifndef OMPLAPP_COMMON_CONFIG_
 #define OMPLAPP_COMMON_CONFIG_
 
-#define OMPLAPP_RESOURCE_DIR "/usr/local/share/ompl/resources"
+#define OMPLAPP_RESOURCE_DIR "/home/zanlongo/Documents/Development/Projects/omplapp/resources"
 
 /** \brief Specify which version of Assimp is used */
 #define OMPL_HAS_ASSIMP2 0
