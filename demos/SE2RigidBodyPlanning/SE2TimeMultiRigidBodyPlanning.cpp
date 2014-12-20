@@ -34,7 +34,10 @@ public:
 class timeMotionValidator : public base::MotionValidator
 {
 public:
-
+    virtual bool checkMotion(const base::State *s1, const base::State *s2) const
+    {
+        return true;
+    }
 };
 
 int main()
@@ -75,12 +78,13 @@ int main()
     setup.setStartAndGoalStates(start, goal);
 
     base::SpaceInformationPtr si(setup.getSpaceInformation());
-
-    // set bounds    
+    // base::StateSpacePtr stateSpace(setup.getStateSpace());
+    // set the bounds for the R^2 part of SE(2)
     base::RealVectorBounds bounds(2);
     bounds.setLow(-30.0);
     bounds.setHigh(30.0);
-    //si->as<base::SE2StateSpace>()->setBounds(bounds);
+    setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
+    setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
 
     // set state validity checker    
     si->setStateValidityChecker(base::StateValidityCheckerPtr(new timeStateValidityChecker(si)));
@@ -91,10 +95,11 @@ int main()
     si->setup();
 
     // use RRTConnect for planning
+    // setup.getSpaceInformation()->setStateValidityCheckingResolution(0.03);
     setup.setPlanner (base::PlannerPtr(new geometric::RRTConnect(setup.getSpaceInformation())));
 
-    setup.setup();
-    setup.print(std::cout);
+    // setup.setup();
+    // setup.print(std::cout);
     // attempt to solve the problem, and print it to screen if a solution is found
     if (setup.solve(60))
     {
