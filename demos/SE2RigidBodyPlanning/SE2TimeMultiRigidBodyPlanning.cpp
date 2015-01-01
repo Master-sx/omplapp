@@ -76,18 +76,18 @@ int main()
 
     // set the start & goal states
     setup.setStartAndGoalStates(start, goal);
-
-    base::SpaceInformationPtr si(setup.getSpaceInformation());
-    // base::StateSpacePtr stateSpace(setup.getStateSpace());
+    
     // set the bounds for the R^2 part of SE(2)
     base::RealVectorBounds bounds(2);
     bounds.setLow(-30.0);
     bounds.setHigh(30.0);
-    setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
-    setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
 
-    // set state validity checker    
+    setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
+
+    // set state validity checker
+    base::SpaceInformationPtr si(setup.getSpaceInformation());
     si->setStateValidityChecker(base::StateValidityCheckerPtr(new timeStateValidityChecker(si)));
+    si->setStateValidityCheckingResolution(0.03); // 3%
 
     // set motion validator
     // si->setMotionValidator(base::MotionValidatorPtr(new timeMotionValidator(si)));
@@ -95,11 +95,10 @@ int main()
     si->setup();
 
     // use RRTConnect for planning
-    // setup.getSpaceInformation()->setStateValidityCheckingResolution(0.03);
     setup.setPlanner (base::PlannerPtr(new geometric::RRTConnect(setup.getSpaceInformation())));
 
-    // setup.setup();
-    // setup.print(std::cout);
+    setup.setup();
+    setup.print(std::cout);
     // attempt to solve the problem, and print it to screen if a solution is found
     if (setup.solve(60))
     {
