@@ -14,7 +14,7 @@
 
 ompl::base::ScopedState<> ompl::app::SE2TimeRigidBodyPlanning::getDefaultStartState(void) const
 {
-    base::ScopedState<base::SE2StateSpace> st(getGeometricComponentStateSpace());
+    base::ScopedState<base::SE2TimeStateSpace> st(getGeometricComponentStateSpace());
     aiVector3D s = getRobotCenter(0);
 
     st->setX(s.x);
