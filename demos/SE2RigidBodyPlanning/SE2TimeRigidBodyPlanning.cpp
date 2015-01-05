@@ -30,12 +30,12 @@ int main()
     setup.setEnvironmentMesh(env_fname.c_str());
 
     // define starting state
-    base::ScopedState<base::SE2StateSpace> start(setup.getSpaceInformation());
+    base::ScopedState<base::SE2TimeStateSpace> start(setup.getSpaceInformation());
     start->setX(-20.99);
     start->setY(-0.15);
 
     // define goal state
-    base::ScopedState<base::SE2StateSpace> goal(start);
+    base::ScopedState<base::SE2TimeStateSpace> goal(start);
     goal->setX(15.01);
     goal->setY(-52.00);
 
