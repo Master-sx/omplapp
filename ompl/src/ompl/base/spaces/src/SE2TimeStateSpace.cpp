@@ -68,14 +68,14 @@ void ompl::base::SE2TimeStateSpace::registerProjections()
         virtual void defaultCellSizes()
         {
             cellSizes_.resize(2);
-            bounds_ = space_->as<SE2StateSpace>()->getBounds();
+            bounds_ = space_->as<SE2TimeStateSpace>()->getBounds();
             cellSizes_[0] = (bounds_.high[0] - bounds_.low[0]) / magic::PROJECTION_DIMENSION_SPLITS;
             cellSizes_[1] = (bounds_.high[1] - bounds_.low[1]) / magic::PROJECTION_DIMENSION_SPLITS;
         }
 
         virtual void project(const State *state, EuclideanProjection &projection) const
         {
-            memcpy(&projection(0), state->as<SE2StateSpace::StateType>()->as<RealVectorStateSpace::StateType>(0)->values, 2 * sizeof(double));
+            memcpy(&projection(0), state->as<SE2TimeStateSpace::StateType>()->as<RealVectorStateSpace::StateType>(0)->values, 2 * sizeof(double));
         }
     };
 
