@@ -34,10 +34,15 @@ public:
 class timeMotionValidator : public base::MotionValidator
 {
 public:
-    virtual bool checkMotion(const base::State *s1, const base::State *s2) const
-    {
-        return true;
-    }
+    // virtual bool checkMotion(const base::State *s1, const base::State *s2) const
+    // {
+    //     return true;
+    // }
+
+    // virtual bool checkMotion() const
+    // {
+    //     return true;
+    // }
 };
 
 int main()
@@ -76,12 +81,23 @@ int main()
 
     // set the start & goal states
     setup.setStartAndGoalStates(start, goal);
+
+    // base::RealVectorBounds bounds(3);
+    // bounds.low[0] = -55.00;
+    // bounds.low[1] = -55.00;
+    // bounds.low[2] = -55.00;
+ 
+    // bounds.high[0] = 55.00;
+    // bounds.high[1] = 55.00;
+    // bounds.high[2] = 55.00;
     
     // set the bounds for the R^2 part of SE(2)
-    base::RealVectorBounds bounds(2);
+    base::RealVectorBounds bounds(3);
     bounds.setLow(-30.0);
     bounds.setHigh(30.0);
 
+    // setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
+    // setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
     setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
 
     // set state validity checker

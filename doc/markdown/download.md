@@ -2,14 +2,14 @@
 
 # Releases
 
-- __OMPL.app__ 1.0.0, released Dec 31, 2014 ([release notes](releaseNotes.html)):
+- __OMPL.app__ 1.0.0, released Jan 05, 2015 ([release notes](releaseNotes.html)):
 
   <a href="https://bitbucket.org/ompl/ompl/downloads/omplapp-1.0.0-Source.tar.gz" class="btn btn-primary btn-sm">TGZ</a>
   <a href="https://bitbucket.org/ompl/ompl/downloads/omplapp-1.0.0-Source.zip" class="btn btn-primary btn-sm">ZIP</a><br><br>
 
   OMPL.app is also available through the OS X MacPorts package manager (type “sudo port install ompl +app”).
 
-- __OMPL__ 1.0.0, released Dec 31, 2014 ([release notes](core/releaseNotes.html)):
+- __OMPL__ 1.0.0, released Jan 05, 2015 ([release notes](core/releaseNotes.html)):
 
   Just the [core OMPL library](/core/download.html) (no GUI, no bindings to [FCL](http://gamma.cs.unc.edu/FCL), [PQP](http://gamma.cs.unc.edu/SSV), and [Assimp](http://assimp.sf.net)):
 
