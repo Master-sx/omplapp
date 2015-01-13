@@ -14,6 +14,8 @@
 #include <omplapp/config.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 
+#include<iostream>
+
 using namespace ompl;
 
 class timeStateValidityChecker : public base::StateValidityChecker
@@ -82,24 +84,43 @@ int main()
     // set the start & goal states
     setup.setStartAndGoalStates(start, goal);
 
-    // base::RealVectorBounds bounds(3);
-    // bounds.low[0] = -55.00;
-    // bounds.low[1] = -55.00;
-    // bounds.low[2] = -55.00;
+    // temporary bounds
+    base::RealVectorBounds bounds(7);
+    bounds.low[0] = -55.00;
+    bounds.low[1] = -55.00;
+    bounds.low[2] = -55.00;
+    bounds.low[3] = -55.00;
+    bounds.low[4] = -55.00;
+    bounds.low[5] = -55.00;
+    bounds.low[6] = -55.00;
  
-    // bounds.high[0] = 55.00;
-    // bounds.high[1] = 55.00;
-    // bounds.high[2] = 55.00;
+    bounds.high[0] = 55.00;
+    bounds.high[1] = 55.00;
+    bounds.high[2] = 55.00;
+    bounds.high[3] = 55.00;
+    bounds.high[4] = 55.00;
+    bounds.high[5] = 55.00;
+    bounds.high[6] = 55.00;
+
+    // sanity check -> statespace get dimension, should return 7 for 2 robots
+    std::cout << "\ndimensions:\t";
+    std::cout << setup.getSpaceInformation()->getStateSpace()->getDimension();
+    std::cout << "\n";
     
     // set the bounds for the R^2 part of SE(2)
-    base::RealVectorBounds bounds(3);
-    bounds.setLow(-30.0);
-    bounds.setHigh(30.0);
+    // base::RealVectorBounds bounds(2);
+    // bounds.setLow(-30.0);
+    // bounds.setHigh(30.0);
 
+     setup.getSpaceInformation()->getStateSpace()->as<base::SE2TimeStateSpace>()->setBounds(bounds);
     // setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
     // setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
-    setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
 
+    // loop, for each state?
+
+    // set dimensions for time
+    setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
+    
     // set state validity checker
     base::SpaceInformationPtr si(setup.getSpaceInformation());
     si->setStateValidityChecker(base::StateValidityCheckerPtr(new timeStateValidityChecker(si)));

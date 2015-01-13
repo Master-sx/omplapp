@@ -14,6 +14,7 @@
 #include "omplapp/apps/AppBase.h"
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/base/spaces/TimeStateSpace.h>
+#include <ompl/base/spaces/SE2TimeStateSpace.h>
 
 namespace ompl
 {
