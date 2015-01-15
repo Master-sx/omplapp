@@ -37,6 +37,7 @@
 #include <ompl/base/goals/GoalState.h>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/base/spaces/DiscreteStateSpace.h>
+#include <ompl/base/spaces/TimeStateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/control/SimpleSetup.h>
 #include <ompl/config.h>
@@ -58,15 +59,17 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
     ob::CompoundStateSpace::StateType& s = *result->as<ob::CompoundStateSpace::StateType>();
     ob::SE2StateSpace::StateType& se2 = *s.as<ob::SE2StateSpace::StateType>(0);
     ob::RealVectorStateSpace::StateType& velocity = *s.as<ob::RealVectorStateSpace::StateType>(1);
-    ob::DiscreteStateSpace::StateType& gear = *s.as<ob::DiscreteStateSpace::StateType>(2);
+    // ob::DiscreteStateSpace::StateType& gear = *s.as<ob::DiscreteStateSpace::StateType>(2);
+    ob::TimeStateSpace::StateType& timeSpace = *s.as<ob::TimeStateSpace::StateType>(2);
 
     si->getStateSpace()->copyState(result, state);
-    for(int i=0; i<nsteps; i++)
+    for(int i = 0; i < nsteps; i++)
     {
         se2.setX(se2.getX() + dt * velocity.values[0] * cos(se2.getYaw()));
         se2.setY(se2.getY() + dt * velocity.values[0] * sin(se2.getYaw()));
         se2.setYaw(se2.getYaw() + dt * u[0]);
         // velocity.values[0] = velocity.values[0] + dt * (u[1]*gear.value);
+        // timeSpace.position = timeSpace.position + 1;
 
         // 'guards' - conditions to change gears
         // if (gear.value > 0)
@@ -76,6 +79,7 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
         //     else if (gear.value > 1 && velocity.values[0] < 10*gear.value)
         //         gear.value--;
         // }
+
         if (!si->satisfiesBounds(result))
             return;
     }
@@ -85,8 +89,7 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
 // To make the turn, the car will have to downshift.
 bool isStateValid(const oc::SpaceInformation *si, const ob::State *state)
 {
-  const ob::SE2StateSpace::StateType *se2 =
-      state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
+  const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
   return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
 }
 
@@ -96,10 +99,11 @@ int main(int, char**)
     // plan for hybrid car in SE(2) with discrete gears
     ob::StateSpacePtr SE2(new ob::SE2StateSpace());
     ob::StateSpacePtr velocity(new ob::RealVectorStateSpace(1));
+    ob::StateSpacePtr timeSpace(new ob::TimeStateSpace());
     // set the range for gears: [-1,3] inclusive
     // ob::StateSpacePtr gear(new ob::DiscreteStateSpace(-1,3));
     // ob::StateSpacePtr stateSpace = SE2 + velocity + gear;
-    ob::StateSpacePtr stateSpace = SE2 + velocity;
+    ob::StateSpacePtr stateSpace = SE2 + velocity + timeSpace;
 
     // set the bounds for the R^2 part of SE(2)
     ob::RealVectorBounds bounds(2);
@@ -113,6 +117,11 @@ int main(int, char**)
     velocityBound.setHigh(60);
     velocity->as<ob::RealVectorStateSpace>()->setBounds(velocityBound);
 
+    // set the bounds for the time
+    ob::RealVectorBounds timeBound(1);
+    timeBound.setLow(0);
+    timeBound.setHigh(1);
+
     // create start and goal states
     ob::ScopedState<> start(stateSpace);
     ob::ScopedState<> goal(stateSpace);
@@ -123,6 +132,7 @@ int main(int, char**)
     start[0] = start[1] = -90.; // position
     start[2] = boost::math::constants::pi<double>()/2; // orientation
     start[3] = 40.; // velocity
+    start[4] = 0.; // time
     // start->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
 
     goal[0] = goal[1] = 90.; // position
@@ -144,10 +154,8 @@ int main(int, char**)
 
     oc::SimpleSetup setup(cmanifold);
     setup.setStartAndGoalStates(start, goal, 5.);
-    setup.setStateValidityChecker(boost::bind(
-        &isStateValid, setup.getSpaceInformation().get(), _1));
-    setup.setStatePropagator(boost::bind(
-        &propagate, setup.getSpaceInformation().get(), _1, _2, _3, _4));
+    setup.setStateValidityChecker(boost::bind(&isStateValid, setup.getSpaceInformation().get(), _1));
+    setup.setStatePropagator(boost::bind(&propagate, setup.getSpaceInformation().get(), _1, _2, _3, _4));
     setup.getSpaceInformation()->setPropagationStepSize(.1);
     setup.getSpaceInformation()->setMinMaxControlDuration(2, 3);
 
@@ -160,35 +168,35 @@ int main(int, char**)
 
         // print out full state on solution path
         // (format: x, y, theta, v, u0, u1, dt)
-        for(unsigned int i=0; i<path.getStateCount(); ++i)
+        std::cout << "X\tY\tA\tT\tV\tU0\tU1\n";
+        for(unsigned int i = 0; i < path.getStateCount(); ++i)
         {
             const ob::State* state = path.getState(i);
-            const ob::SE2StateSpace::StateType *se2 =
-                state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
-            const ob::RealVectorStateSpace::StateType *velocity =
-                state->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(1);
-            // const ob::DiscreteStateSpace::StateType *gear =
-                // state->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2);
-            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw()
-                // << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
-            std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw()
-                << ' ' << velocity->values[0];
-            if (i==0)
+            const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
+            const ob::RealVectorStateSpace::StateType *velocity = state->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(1);
+            // const ob::DiscreteStateSpace::StateType *gear = state->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2);
+            const ob::TimeStateSpace::StateType *timeSpace = state->as<ob::CompoundState>()->as<ob::TimeStateSpace::StateType>(2);
+            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
+            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0];
+            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << timeSpace->position << ' ';            
+            std::cout << std::setprecision(2) << se2->getX() << '\t' << se2->getY() << '\t' << se2->getYaw() << '\t' << timeSpace->position << '\t' << velocity->values[0];
+
+            if (i == 0)
                 // null controls applied for zero seconds to get to start state
                 std::cout << "0 0 0";
             else
             {
                 // print controls and control duration needed to get from state i-1 to state i
-                const double* u =
-                    path.getControl(i-1)->as<oc::RealVectorControlSpace::ControlType>()->values;
-                std::cout << u[0] << ' ' << u[1] << ' ' << path.getControlDuration(i-1);
+                const double* u = path.getControl(i-1)->as<oc::RealVectorControlSpace::ControlType>()->values;
+                std::cout << u[0] << ' ' << u[1] << ' ' << path.getControlDuration(i - 1);
             }
+
             std::cout << std::endl;
         }
+
         if (!setup.haveExactSolutionPath())
         {
-            std::cout << "Solution is approximate. Distance to actual goal is " <<
-                setup.getProblemDefinition()->getSolutionDifference() << std::endl;
+            std::cout << "Solution is approximate. Distance to actual goal is " << setup.getProblemDefinition()->getSolutionDifference() << std::endl;
         }
     }
 
