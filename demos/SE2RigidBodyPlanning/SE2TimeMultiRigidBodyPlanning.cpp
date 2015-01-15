@@ -112,7 +112,7 @@ int main()
     // bounds.setLow(-30.0);
     // bounds.setHigh(30.0);
 
-     setup.getSpaceInformation()->getStateSpace()->as<base::SE2TimeStateSpace>()->setBounds(bounds);
+     setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
     // setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
     // setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
 
