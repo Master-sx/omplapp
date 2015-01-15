@@ -66,16 +66,16 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
         se2.setX(se2.getX() + dt * velocity.values[0] * cos(se2.getYaw()));
         se2.setY(se2.getY() + dt * velocity.values[0] * sin(se2.getYaw()));
         se2.setYaw(se2.getYaw() + dt * u[0]);
-        velocity.values[0] = velocity.values[0] + dt * (u[1]*gear.value);
+        // velocity.values[0] = velocity.values[0] + dt * (u[1]*gear.value);
 
         // 'guards' - conditions to change gears
-        if (gear.value > 0)
-        {
-            if (gear.value < 3 && velocity.values[0] > 10*(gear.value + 1))
-                gear.value++;
-            else if (gear.value > 1 && velocity.values[0] < 10*gear.value)
-                gear.value--;
-        }
+        // if (gear.value > 0)
+        // {
+        //     if (gear.value < 3 && velocity.values[0] > 10*(gear.value + 1))
+        //         gear.value++;
+        //     else if (gear.value > 1 && velocity.values[0] < 10*gear.value)
+        //         gear.value--;
+        // }
         if (!si->satisfiesBounds(result))
             return;
     }
@@ -97,8 +97,9 @@ int main(int, char**)
     ob::StateSpacePtr SE2(new ob::SE2StateSpace());
     ob::StateSpacePtr velocity(new ob::RealVectorStateSpace(1));
     // set the range for gears: [-1,3] inclusive
-    ob::StateSpacePtr gear(new ob::DiscreteStateSpace(-1,3));
-    ob::StateSpacePtr stateSpace = SE2 + velocity + gear;
+    // ob::StateSpacePtr gear(new ob::DiscreteStateSpace(-1,3));
+    // ob::StateSpacePtr stateSpace = SE2 + velocity + gear;
+    ob::StateSpacePtr stateSpace = SE2 + velocity;
 
     // set the bounds for the R^2 part of SE(2)
     ob::RealVectorBounds bounds(2);
@@ -122,12 +123,12 @@ int main(int, char**)
     start[0] = start[1] = -90.; // position
     start[2] = boost::math::constants::pi<double>()/2; // orientation
     start[3] = 40.; // velocity
-    start->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
+    // start->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
 
     goal[0] = goal[1] = 90.; // position
     goal[2] = 0.; // orientation
     goal[3] = 40.; // velocity
-    goal->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
+    // goal->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
 
     oc::ControlSpacePtr cmanifold(new oc::RealVectorControlSpace(stateSpace, 2));
 
@@ -166,10 +167,12 @@ int main(int, char**)
                 state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
             const ob::RealVectorStateSpace::StateType *velocity =
                 state->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(1);
-            const ob::DiscreteStateSpace::StateType *gear =
-                state->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2);
+            // const ob::DiscreteStateSpace::StateType *gear =
+                // state->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2);
+            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw()
+                // << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
             std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw()
-                << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
+                << ' ' << velocity->values[0];
             if (i==0)
                 // null controls applied for zero seconds to get to start state
                 std::cout << "0 0 0";
