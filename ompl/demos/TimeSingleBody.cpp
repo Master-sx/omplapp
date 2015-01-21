@@ -69,7 +69,8 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
         se2.setY(se2.getY() + dt * velocity.values[0] * sin(se2.getYaw()));
         se2.setYaw(se2.getYaw() + dt * u[0]);
         // velocity.values[0] = velocity.values[0] + dt * (u[1]*gear.value);
-        // timeSpace.position = timeSpace.position + 1;
+        velocity.values[0] = velocity.values[0] + dt * u[1];
+        timeSpace.position = timeSpace.position + duration;
 
         // 'guards' - conditions to change gears
         // if (gear.value > 0)
@@ -118,9 +119,7 @@ int main(int, char**)
     velocity->as<ob::RealVectorStateSpace>()->setBounds(velocityBound);
 
     // set the bounds for the time
-    ob::RealVectorBounds timeBound(1);
-    timeBound.setLow(0);
-    timeBound.setHigh(1);
+    timeSpace->as<ob::TimeStateSpace>()->setBounds(0,100);
 
     // create start and goal states
     ob::ScopedState<> start(stateSpace);
