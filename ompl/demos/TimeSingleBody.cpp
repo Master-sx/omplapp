@@ -86,12 +86,22 @@ void propagate(const oc::SpaceInformation *si, const ob::State *state,
     }
 }
 
+bool canPropagateBackward ()
+{
+    return false;
+}
+
 // The free space consists of two narrow corridors connected at right angle.
 // To make the turn, the car will have to downshift.
 bool isStateValid(const oc::SpaceInformation *si, const ob::State *state)
 {
   const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
-  return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
+  //check that time isnt used in the first x seconds
+  // return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
+  return si->satisfiesBounds(state) && !(
+    (se2->getX() > -80. && se2->getX() < -20 && se2->getY() > -80. && se2->getY() < -20) ||
+    (se2->getX() > -80. && se2->getX() < -20 && se2->getY() > 20. && se2->getY() < 80) ||
+    (se2->getX() > 20. && se2->getX() < 80 && se2->getY() > 20. && se2->getY() < 80));
 }
 
 
@@ -119,7 +129,8 @@ int main(int, char**)
     velocity->as<ob::RealVectorStateSpace>()->setBounds(velocityBound);
 
     // set the bounds for the time
-    timeSpace->as<ob::TimeStateSpace>()->setBounds(0,100);
+    // currently not setting bounds, time can go forever
+    timeSpace->as<ob::TimeStateSpace>()->setBounds(0., 100.);
 
     // create start and goal states
     ob::ScopedState<> start(stateSpace);
@@ -131,12 +142,13 @@ int main(int, char**)
     start[0] = start[1] = -90.; // position
     start[2] = boost::math::constants::pi<double>()/2; // orientation
     start[3] = 40.; // velocity
-    start[4] = 0.; // time
+    // start[4] = 0.; // time
     // start->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
 
     goal[0] = goal[1] = 90.; // position
     goal[2] = 0.; // orientation
     goal[3] = 40.; // velocity
+    // goal[4] = 5.; // time
     // goal->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
 
     oc::ControlSpacePtr cmanifold(new oc::RealVectorControlSpace(stateSpace, 2));
