@@ -47,6 +47,7 @@
 
 namespace ob = ompl::base;
 namespace oc = ompl::control;
+using namespace std;
 
 void propagate(const oc::SpaceInformation *si, const ob::State *state,
     const oc::Control* control, const double duration, ob::State *result)
@@ -95,13 +96,39 @@ bool canPropagateBackward ()
 // To make the turn, the car will have to downshift.
 bool isStateValid(const oc::SpaceInformation *si, const ob::State *state)
 {
-  const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
-  //check that time isnt used in the first x seconds
+    const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
+    const ob::TimeStateSpace::StateType *timeSpace = state->as<ob::CompoundState>()->as<ob::TimeStateSpace::StateType>(2);
+
+  // check that time isnt used in the first x seconds
   // return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
-  return si->satisfiesBounds(state) && !(
-    (se2->getX() > -80. && se2->getX() < -20 && se2->getY() > -80. && se2->getY() < -20) ||
-    (se2->getX() > -80. && se2->getX() < -20 && se2->getY() > 20. && se2->getY() < 80) ||
-    (se2->getX() > 20. && se2->getX() < 80 && se2->getY() > 20. && se2->getY() < 80));
+
+    // check if bounds are satisfied
+    if (si->satisfiesBounds(state)) {
+        // is it in an occupied time?
+        if (timeSpace->position > 0 && timeSpace->position < 100) {
+            // check against larger borders
+            if ((se2->getX() > -85. && se2->getX() < -15 && se2->getY() > -85. && se2->getY() < -15) ||
+                (se2->getX() > -85. && se2->getX() < -15 && se2->getY() > 15. && se2->getY() < 85) ||
+                (se2->getX() > 15. && se2->getX() < 85 && se2->getY() > 15. && se2->getY() < 85)) {
+                    return false;
+            } else {
+                return true;
+            }
+        // not in occupied time
+        } else {
+            // check against regular borders
+            if ((se2->getX() > -80. && se2->getX() < -20 && se2->getY() > -80. && se2->getY() < -20) ||
+                (se2->getX() > -80. && se2->getX() < -20 && se2->getY() > 20. && se2->getY() < 80) ||
+                (se2->getX() > 20. && se2->getX() < 80 && se2->getY() > 20. && se2->getY() < 80)) {
+                return false;
+            } else {
+                return true;
+            }
+        } 
+    } else {    
+        return false;
+    }
+    
 }
 
 
@@ -179,7 +206,7 @@ int main(int, char**)
 
         // print out full state on solution path
         // (format: x, y, theta, v, u0, u1, dt)
-        std::cout << "X\tY\tA\tT\tV\tU0\tU1\n";
+        cout << "X\tY\tA\tT\tV\tU0\tU1\n";
         for(unsigned int i = 0; i < path.getStateCount(); ++i)
         {
             const ob::State* state = path.getState(i);
@@ -187,27 +214,26 @@ int main(int, char**)
             const ob::RealVectorStateSpace::StateType *velocity = state->as<ob::CompoundState>()->as<ob::RealVectorStateSpace::StateType>(1);
             // const ob::DiscreteStateSpace::StateType *gear = state->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2);
             const ob::TimeStateSpace::StateType *timeSpace = state->as<ob::CompoundState>()->as<ob::TimeStateSpace::StateType>(2);
-            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
-            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0];
-            // std::cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << timeSpace->position << ' ';            
-            std::cout << std::setprecision(2) << se2->getX() << '\t' << se2->getY() << '\t' << se2->getYaw() << '\t' << timeSpace->position << '\t' << velocity->values[0];
+            // cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << gear->value << ' ';
+            // cout << se2->getX() << ' ' << se2->getY() << ' ' << se2->getYaw() << ' ' << velocity->values[0] << ' ' << timeSpace->position << ' ';            
+            cout << setprecision(2) << se2->getX() << '\t' << se2->getY() << '\t' << se2->getYaw() << '\t' << timeSpace->position << '\t' << velocity->values[0];
 
             if (i == 0)
                 // null controls applied for zero seconds to get to start state
-                std::cout << "0 0 0";
+                cout << "0 0 0";
             else
             {
                 // print controls and control duration needed to get from state i-1 to state i
                 const double* u = path.getControl(i-1)->as<oc::RealVectorControlSpace::ControlType>()->values;
-                std::cout << u[0] << ' ' << u[1] << ' ' << path.getControlDuration(i - 1);
+                cout << u[0] << ' ' << u[1] << ' ' << path.getControlDuration(i - 1);
             }
 
-            std::cout << std::endl;
+            cout << endl;
         }
 
         if (!setup.haveExactSolutionPath())
         {
-            std::cout << "Solution is approximate. Distance to actual goal is " << setup.getProblemDefinition()->getSolutionDifference() << std::endl;
+            cout << "Solution is approximate. Distance to actual goal is " << setup.getProblemDefinition()->getSolutionDifference() << endl;
         }
     }
 
