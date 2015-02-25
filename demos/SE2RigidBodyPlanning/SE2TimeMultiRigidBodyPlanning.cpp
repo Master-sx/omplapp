@@ -10,47 +10,74 @@
 
 /* Author: Ryan Luna */
 
-#include <omplapp/apps/SE2TimeMultiRigidBodyPlanning.h>
+#include <omplapp/apps/SE2MultiRigidBodyPlanning.h>
 #include <omplapp/config.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
 
-#include<iostream>
+#include <ompl/base/goals/GoalState.h>
+#include <ompl/base/spaces/SE2StateSpace.h>
+#include <ompl/base/spaces/DiscreteStateSpace.h>
+#include <ompl/base/spaces/TimeStateSpace.h>
+#include <ompl/control/spaces/RealVectorControlSpace.h>
+#include <ompl/control/SimpleSetup.h>
+#include <ompl/config.h>
+#include <iostream>
+#include <limits>
+#include <boost/math/constants/constants.hpp>
+
+namespace ob = ompl::base;
+namespace oc = ompl::control;
+using namespace std;
+
+void propagate(const oc::SpaceInformation *si, const ob::State *state,
+    const oc::Control* control, const double duration, ob::State *result)
+{
+    static double timeStep = .01;
+    int nsteps = ceil(duration / timeStep);
+    double dt = duration / nsteps;
+    const double *u = control->as<oc::RealVectorControlSpace::ControlType>()->values;
+
+    ob::CompoundStateSpace::StateType& s = *result->as<ob::CompoundStateSpace::StateType>();
+    ob::SE2StateSpace::StateType& se2 = *s.as<ob::SE2StateSpace::StateType>(0);
+    ob::RealVectorStateSpace::StateType& velocity = *s.as<ob::RealVectorStateSpace::StateType>(1);
+    // ob::DiscreteStateSpace::StateType& gear = *s.as<ob::DiscreteStateSpace::StateType>(2);
+    ob::TimeStateSpace::StateType& timeSpace = *s.as<ob::TimeStateSpace::StateType>(2);
+
+    si->getStateSpace()->copyState(result, state);
+    for(int i = 0; i < nsteps; i++)
+    {
+        se2.setX(se2.getX() + dt * velocity.values[0] * cos(se2.getYaw()));
+        se2.setY(se2.getY() + dt * velocity.values[0] * sin(se2.getYaw()));
+        se2.setYaw(se2.getYaw() + dt * u[0]);
+        // velocity.values[0] = velocity.values[0] + dt * (u[1]*gear.value);
+        velocity.values[0] = velocity.values[0] + dt * u[1];
+        timeSpace.position = timeSpace.position + duration;
+
+        // 'guards' - conditions to change gears
+        // if (gear.value > 0)
+        // {
+        //     if (gear.value < 3 && velocity.values[0] > 10*(gear.value + 1))
+        //         gear.value++;
+        //     else if (gear.value > 1 && velocity.values[0] < 10*gear.value)
+        //         gear.value--;
+        // }
+
+        if (!si->satisfiesBounds(result))
+            return;
+    }
+}
+
+bool canPropagateBackward ()
+{
+    return false;
+}
 
 using namespace ompl;
-
-class timeStateValidityChecker : public base::StateValidityChecker
-{
-public:
-        timeStateValidityChecker(const base::SpaceInformationPtr &si) :
-            base::StateValidityChecker(si)
-                {
-
-                }
-
-        virtual bool isValid(const base::State *state) const
-        {
-            return true;
-        }
-};
-
-class timeMotionValidator : public base::MotionValidator
-{
-public:
-    // virtual bool checkMotion(const base::State *s1, const base::State *s2) const
-    // {
-    //     return true;
-    // }
-
-    // virtual bool checkMotion() const
-    // {
-    //     return true;
-    // }
-};
 
 int main()
 {
     // plan for two bodies in SE2
-    app::SE2TimeMultiRigidBodyPlanning setup(2);
+    app::SE2MultiRigidBodyPlanning setup(2);
 
     // load the robot and the environment
     std::string robot_fname = std::string(OMPLAPP_RESOURCE_DIR) + "/2D/car1_planar_robot.dae";
@@ -84,55 +111,9 @@ int main()
     // set the start & goal states
     setup.setStartAndGoalStates(start, goal);
 
-    // temporary bounds
-    base::RealVectorBounds bounds(7);
-    bounds.low[0] = -55.00;
-    bounds.low[1] = -55.00;
-    bounds.low[2] = -55.00;
-    bounds.low[3] = -55.00;
-    bounds.low[4] = -55.00;
-    bounds.low[5] = -55.00;
-    bounds.low[6] = -55.00;
- 
-    bounds.high[0] = 55.00;
-    bounds.high[1] = 55.00;
-    bounds.high[2] = 55.00;
-    bounds.high[3] = 55.00;
-    bounds.high[4] = 55.00;
-    bounds.high[5] = 55.00;
-    bounds.high[6] = 55.00;
-
-    // sanity check -> statespace get dimension, should return 7 for 2 robots
-    std::cout << "\ndimensions:\t";
-    std::cout << setup.getSpaceInformation()->getStateSpace()->getDimension();
-    std::cout << "\n";
-    
-    // set the bounds for the R^2 part of SE(2)
-    // base::RealVectorBounds bounds(2);
-    // bounds.setLow(-30.0);
-    // bounds.setHigh(30.0);
-
-     setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
-    // setup->getGeometricComponentStateSpace(0)->setBounds(bounds);
-    // setup->getGeometricComponentStateSpace(1)->setBounds(bounds);
-
-    // loop, for each state?
-
-    // set dimensions for time
-    setup.getSpaceInformation()->getStateSpace()->as<base::SE2StateSpace>()->setBounds(bounds);
-    
-    // set state validity checker
-    base::SpaceInformationPtr si(setup.getSpaceInformation());
-    si->setStateValidityChecker(base::StateValidityCheckerPtr(new timeStateValidityChecker(si)));
-    si->setStateValidityCheckingResolution(0.03); // 3%
-
-    // set motion validator
-    // si->setMotionValidator(base::MotionValidatorPtr(new timeMotionValidator(si)));
-    
-    si->setup();
-
     // use RRTConnect for planning
     setup.setPlanner (base::PlannerPtr(new geometric::RRTConnect(setup.getSpaceInformation())));
+    setup.setStatePropagator(boost::bind(&propagate, setup.getSpaceInformation().get(), _1, _2, _3, _4));
 
     setup.setup();
     setup.print(std::cout);
@@ -140,7 +121,6 @@ int main()
     if (setup.solve(60))
     {
         setup.simplifySolution();
-        // setup.getSolutionPath().interpolate(); // plot the path
         setup.getSolutionPath().printAsMatrix(std::cout);
     }
 

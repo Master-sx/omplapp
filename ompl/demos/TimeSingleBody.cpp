@@ -99,13 +99,13 @@ bool isStateValid(const oc::SpaceInformation *si, const ob::State *state)
     const ob::SE2StateSpace::StateType *se2 = state->as<ob::CompoundState>()->as<ob::SE2StateSpace::StateType>(0);
     const ob::TimeStateSpace::StateType *timeSpace = state->as<ob::CompoundState>()->as<ob::TimeStateSpace::StateType>(2);
 
-  // check that time isnt used in the first x seconds
-  // return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
+    // check that time isnt used in the first x seconds
+    // return si->satisfiesBounds(state) && (se2->getX() < -80. || se2->getY() > 80.);
 
     // check if bounds are satisfied
     if (si->satisfiesBounds(state)) {
         // is it in an occupied time?
-        if (timeSpace->position > 0 && timeSpace->position < 100) {
+        if (timeSpace->position > 30 && timeSpace->position < 70) {
             // check against larger borders
             if ((se2->getX() > -85. && se2->getX() < -15 && se2->getY() > -85. && se2->getY() < -15) ||
                 (se2->getX() > -85. && se2->getX() < -15 && se2->getY() > 15. && se2->getY() < 85) ||
@@ -127,8 +127,7 @@ bool isStateValid(const oc::SpaceInformation *si, const ob::State *state)
         } 
     } else {    
         return false;
-    }
-    
+    }    
 }
 
 
@@ -167,7 +166,7 @@ int main(int, char**)
     // However, to make the turn, the car cannot stay in third gear and will have to
     // shift to first gear.
     start[0] = start[1] = -90.; // position
-    start[2] = boost::math::constants::pi<double>()/2; // orientation
+    start[2] = boost::math::constants::pi<double>() / 2; // orientation
     start[3] = 40.; // velocity
     // start[4] = 0.; // time
     // start->as<ob::CompoundState>()->as<ob::DiscreteStateSpace::StateType>(2)->value = 3; // gear
@@ -224,7 +223,7 @@ int main(int, char**)
             else
             {
                 // print controls and control duration needed to get from state i-1 to state i
-                const double* u = path.getControl(i-1)->as<oc::RealVectorControlSpace::ControlType>()->values;
+                const double* u = path.getControl(i - 1)->as<oc::RealVectorControlSpace::ControlType>()->values;
                 cout << u[0] << ' ' << u[1] << ' ' << path.getControlDuration(i - 1);
             }
 

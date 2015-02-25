@@ -16,7 +16,9 @@ if (OMPL_BUILD_DEMOS)
     add_omplapp_demo(demo_BlimpPlanning SE3RigidBodyPlanning/BlimpPlanning.cpp)
     add_omplapp_demo(demo_QuadrotorPlanning SE3RigidBodyPlanning/QuadrotorPlanning.cpp)
     add_omplapp_demo(demo_SE2MultiRigidBodyPlanning SE2RigidBodyPlanning/SE2MultiRigidBodyPlanning.cpp)
-	add_omplapp_demo(demo_SE2TimeMultiRigidBodyPlanning SE2RigidBodyPlanning/SE2TimeMultiRigidBodyPlanning.cpp)
+
+	# add_omplapp_demo(demo_SE2TimeMultiRigidBodyPlanning SE2RigidBodyPlanning/SE2TimeMultiRigidBodyPlanning.cpp)
+
     add_omplapp_demo(demo_SE3MultiRigidBodyPlanning SE3RigidBodyPlanning/SE3MultiRigidBodyPlanning.cpp)
     add_omplapp_demo(demo_CollisionCheckers SE3RigidBodyPlanning/CollisionCheckers.cpp)
     add_omplapp_demo(demo_AnytimePathShortening AnytimePathShorteningDemo.cpp)
